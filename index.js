@@ -29,10 +29,23 @@ async function run() {
             res.send(result)
 
         })
+        app.get('/order', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const result = await ordersCollection.find(query).toArray()
+            res.send(result)
+        })
         app.post('/order', async (req, res) => {
             const order = req.body;
 
             const result = await ordersCollection.insertOne(order)
+            res.send(result)
+
+        });
+        app.delete('/order/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: ObjectId(id) }
+            const result = await ordersCollection.deleteOne(query)
             res.send(result)
 
         });
