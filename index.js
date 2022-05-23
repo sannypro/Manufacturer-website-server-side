@@ -1,5 +1,6 @@
 const express = require('express')
 const app = express()
+var jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000
 require('dotenv').config()
 var cors = require('cors')
@@ -16,6 +17,8 @@ async function run() {
     const carPartsCollection = client.db('car-parts').collection('parts')
     const ordersCollection = client.db('car-parts').collection('orders')
     const paymentCollection = client.db('car-parts').collection('payments')
+    const reviewCollection = client.db('car-parts').collection('reviews')
+    const userCollection = client.db('car-parts').collection('users')
     try {
         app.get('/parts', async (req, res) => {
             const query = {}
@@ -27,6 +30,43 @@ async function run() {
             const query = { _id: ObjectId(id) }
 
             const result = await carPartsCollection.findOne(query);
+            res.send(result)
+
+        })
+        app.put('/user/:email', async (req, res) => {
+            const user = req.body;
+            const email = req.params.email
+            const filter = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: user
+
+
+            };
+            const result = await userCollection.updateOne(filter, updateDoc, options)
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN, { expiresIn: '1d' });
+            res.send(token)
+
+        })
+        app.put('/user-update', async (req, res) => {
+            const email = req.query.email
+            const user = req.body
+            const filter = { email: email }
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: user
+
+
+            };
+            const result = await userCollection.updateOne(filter, updateDoc, options)
+
+            res.send(result)
+        })
+
+        app.get('/user', async (req, res) => {
+            const email = req.query.email
+            const query = { email: email }
+            const result = await userCollection.findOne(query)
             res.send(result)
 
         })
@@ -63,7 +103,18 @@ async function run() {
 
             const result = await ordersCollection.updateOne(filter, updateDoc)
 
-            res.send("result")
+            res.send(result)
+        })
+        app.post('/review', async (req, res) => {
+            const review = req.body
+            const result = await reviewCollection.insertOne(review)
+            res.send(result)
+        })
+        app.get("/review", async (req, res) => {
+            const query = {}
+            const cursor = await reviewCollection.find(query).toArray()
+            console.log(cursor);
+            res.send(cursor)
         })
         app.post('/create-payment-intent', async (req, res) => {
             const service = req.body
