@@ -54,9 +54,7 @@ async function run() {
 
 
             });
-            res.send({
-                clientSecret: paymentIntent.client_secret,
-            });
+
         })
         app.post('/order', async (req, res) => {
             const order = req.body;
