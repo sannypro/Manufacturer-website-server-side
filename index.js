@@ -10,7 +10,23 @@ app.use(express.json())
 const stripe = require("stripe")(process.env.SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qrbxe.mongodb.net/?retryWrites=true&w=majority`;
+function verifyToken(req, res, next) {
+    const authHeader = req.headers.authorization;
+    console.log(authHeader);
+    if (!authHeader) {
+        return res.status(401).send({ message: "Unauthorized access" })
+    }
+    const token = authHeader.split(' ')[1]
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+        if (err) {
 
+            return res.status(403).send({ message: 'Forbidden' })
+        }
+        req.decoded = decoded
+        console.log(req.decoded);
+    });
+    next()
+}
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 async function run() {
     await client.connect();
@@ -33,7 +49,7 @@ async function run() {
             res.send(result)
 
         })
-        app.put('/user/:email', async (req, res) => {
+        app.put('/user/:email', verifyToken, async (req, res) => {
             const user = req.body;
             const email = req.params.email
             const filter = { email: email };
@@ -48,7 +64,7 @@ async function run() {
             res.send(token)
 
         })
-        app.put('/user-update', async (req, res) => {
+        app.put('/user-update', verifyToken, async (req, res) => {
             const email = req.query.email
             const user = req.body
             const filter = { email: email }
@@ -63,20 +79,30 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/user', async (req, res) => {
+        app.get('/user', verifyToken, async (req, res) => {
             const email = req.query.email
             const query = { email: email }
             const result = await userCollection.findOne(query)
             res.send(result)
 
         })
-        app.get('/order', async (req, res) => {
+        app.get('/order', verifyToken, async (req, res) => {
             const email = req.query.email;
-            const query = { email: email };
-            const result = await ordersCollection.find(query).toArray()
-            res.send(result)
+
+            const decodedEmail = req.decoded?.email
+
+
+            if (decodedEmail === email) {
+                const query = { email: email };
+                const result = await ordersCollection.find(query).toArray()
+                res.send(result)
+            }
+            else {
+                res.status(403).send({ message: 'Forbidden' })
+            }
+
         })
-        app.post('/payment', async (req, res) => {
+        app.post('/payment', verifyToken, async (req, res) => {
             const payment = req.body;
             const result = await paymentCollection.insertOne(payment)
             res.send(result)
@@ -90,7 +116,7 @@ async function run() {
 
             res.send(result)
         })
-        app.put("/order/:id", async (req, res) => {
+        app.put("/order/:id", verifyToken, async (req, res) => {
             const id = req.params.id
             const payment = req.body
             console.log(payment);
@@ -105,7 +131,7 @@ async function run() {
 
             res.send(result)
         })
-        app.post('/review', async (req, res) => {
+        app.post('/review', verifyToken, async (req, res) => {
             const review = req.body
             const result = await reviewCollection.insertOne(review)
             res.send(result)
@@ -116,7 +142,7 @@ async function run() {
             console.log(cursor);
             res.send(cursor)
         })
-        app.post('/create-payment-intent', async (req, res) => {
+        app.post('/create-payment-intent', verifyToken, async (req, res) => {
             const service = req.body
             const price = await service.price;
             const amount = price * 100;
@@ -141,14 +167,14 @@ async function run() {
 
 
         })
-        app.post('/order', async (req, res) => {
+        app.post('/order', verifyToken, async (req, res) => {
             const order = req.body;
 
             const result = await ordersCollection.insertOne(order)
             res.send(result)
 
         });
-        app.delete('/order/:id', async (req, res) => {
+        app.delete('/order/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const query = { _id: ObjectId(id) }
             const result = await ordersCollection.deleteOne(query)
@@ -156,7 +182,7 @@ async function run() {
 
         });
 
-        app.put('/parts/:id', async (req, res) => {
+        app.put('/parts/:id', verifyToken, async (req, res) => {
             const doc = req.body
             const id = req.params.id;
             const filter = { _id: ObjectId(id) }
