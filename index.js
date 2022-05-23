@@ -15,6 +15,7 @@ async function run() {
     await client.connect();
     const carPartsCollection = client.db('car-parts').collection('parts')
     const ordersCollection = client.db('car-parts').collection('orders')
+    const paymentCollection = client.db('car-parts').collection('payments')
     try {
         app.get('/parts', async (req, res) => {
             const query = {}
@@ -35,6 +36,12 @@ async function run() {
             const result = await ordersCollection.find(query).toArray()
             res.send(result)
         })
+        app.post('/payment', async (req, res) => {
+            const payment = req.body;
+            const result = await paymentCollection.insertOne(payment)
+            res.send(result)
+
+        })
         app.get('/order/:id', async (req, res) => {
             const id = req.params.id;
 
@@ -42,6 +49,21 @@ async function run() {
             const result = await ordersCollection.findOne(query)
 
             res.send(result)
+        })
+        app.put("/order/:id", async (req, res) => {
+            const id = req.params.id
+            const payment = req.body
+            console.log(payment);
+            const filter = { _id: ObjectId(id) };
+            const updateDoc = {
+                $set: payment
+
+
+            };
+
+            const result = await ordersCollection.updateOne(filter, updateDoc)
+
+            res.send("result")
         })
         app.post('/create-payment-intent', async (req, res) => {
             const service = req.body
@@ -82,6 +104,7 @@ async function run() {
             res.send(result)
 
         });
+
         app.put('/parts/:id', async (req, res) => {
             const doc = req.body
             const id = req.params.id;
