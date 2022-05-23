@@ -6,7 +6,7 @@ var cors = require('cors')
 app.use(cors())
 app.use(express.json())
 // 
-
+const stripe = require("stripe")(process.env.SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qrbxe.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -34,6 +34,29 @@ async function run() {
             const query = { email: email };
             const result = await ordersCollection.find(query).toArray()
             res.send(result)
+        })
+        app.get('/order/:id', async (req, res) => {
+            const id = req.params.id;
+
+            const query = { _id: ObjectId(id) };
+            const result = await ordersCollection.findOne(query)
+
+            res.send(result)
+        })
+        app.post('/create-payment-intent', async (req, res) => {
+            const service = req.body
+            const price = service.price;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ['card']
+
+
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
         })
         app.post('/order', async (req, res) => {
             const order = req.body;
