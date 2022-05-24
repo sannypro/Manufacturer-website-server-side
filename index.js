@@ -41,6 +41,11 @@ async function run() {
             const result = await carPartsCollection.find(query).toArray();
             res.send(result)
         })
+        app.post('/parts', async (req, res) => {
+            const parts = req.body
+            const result = await carPartsCollection.insertOne(parts)
+            res.send(result)
+        })
         app.get('/parts/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: ObjectId(id) }
@@ -49,7 +54,7 @@ async function run() {
             res.send(result)
 
         })
-        app.get('admin/:email', async (req, res) => {
+        app.get('/admin/:email', async (req, res) => {
             const email = req.params.email
             const user = await userCollection.findOne({ email: email })
             const isAdmin = user.role === "admin";
@@ -118,6 +123,7 @@ async function run() {
         app.get('/all-user', verifyToken, async (req, res) => {
 
             const query = {}
+            console.log('hiited');
             const result = await userCollection.find(query).toArray()
             res.send(result)
 
