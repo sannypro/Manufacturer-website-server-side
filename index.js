@@ -41,7 +41,7 @@ async function run() {
             const result = await carPartsCollection.find(query).toArray();
             res.send(result)
         })
-        app.post('/parts', async (req, res) => {
+        app.post('/parts', verifyToken, async (req, res) => {
             const parts = req.body
             const result = await carPartsCollection.insertOne(parts)
             res.send(result)
@@ -94,7 +94,7 @@ async function run() {
 
             };
             const result = await userCollection.updateOne(filter, updateDoc, options)
-            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN, { expiresIn: '1d' });
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN, { expiresIn: '1h' });
             res.send(token)
 
         })
@@ -156,6 +156,23 @@ async function run() {
             const query = { _id: ObjectId(id) };
             const result = await ordersCollection.findOne(query)
 
+            res.send(result)
+        });
+        app.get('/orders', verifyToken, async (req, res) => {
+            const query = {}
+            const result = await ordersCollection.find(query).toArray()
+            res.send(result)
+        })
+        app.put('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const status = req.body;
+            const filter = { _id: ObjectId(id) };
+            const updateDoc = {
+                $set: status
+
+
+            };
+            const result = await ordersCollection.updateOne(filter, updateDoc)
             res.send(result)
         })
         app.put("/order/:id", verifyToken, async (req, res) => {
