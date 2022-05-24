@@ -12,7 +12,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qrbxe.mongodb.net/?retryWrites=true&w=majority`;
 function verifyToken(req, res, next) {
     const authHeader = req.headers.authorization;
-    console.log(authHeader);
+
     if (!authHeader) {
         return res.status(401).send({ message: "Unauthorized access" })
     }
@@ -23,7 +23,7 @@ function verifyToken(req, res, next) {
             return res.status(403).send({ message: 'Forbidden' })
         }
         req.decoded = decoded
-        console.log(req.decoded);
+
     });
     next()
 }
@@ -49,7 +49,36 @@ async function run() {
             res.send(result)
 
         })
-        app.put('/user/:email', verifyToken, async (req, res) => {
+        app.get('admin/:email', async (req, res) => {
+            const email = req.params.email
+            const user = await userCollection.findOne({ email: email })
+            const isAdmin = user.role === "admin";
+            res.send({ admin: isAdmin })
+        })
+        app.put('/user/admin/:email', verifyToken, async (req, res) => {
+
+            const email = req.params.email
+            const requester = req.decoded.email
+            const requesterAcc = await userCollection.findOne({ email: requester })
+            if (requesterAcc.role === 'admin') {
+                const filter = { email: email };
+
+                const updateDoc = {
+                    $set: { role: 'admin' }
+
+
+                };
+
+                const result = await userCollection.updateOne(filter, updateDoc)
+                res.send(result)
+            }
+            else {
+                res.status(403).send({ message: "Forbbiden" })
+            }
+
+
+        })
+        app.put('/user/:email', async (req, res) => {
             const user = req.body;
             const email = req.params.email
             const filter = { email: email };
@@ -86,6 +115,13 @@ async function run() {
             res.send(result)
 
         })
+        app.get('/all-user', verifyToken, async (req, res) => {
+
+            const query = {}
+            const result = await userCollection.find(query).toArray()
+            res.send(result)
+
+        })
         app.get('/order', verifyToken, async (req, res) => {
             const email = req.query.email;
 
@@ -108,7 +144,7 @@ async function run() {
             res.send(result)
 
         })
-        app.get('/order/:id', async (req, res) => {
+        app.get('/order/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
 
             const query = { _id: ObjectId(id) };
@@ -119,7 +155,7 @@ async function run() {
         app.put("/order/:id", verifyToken, async (req, res) => {
             const id = req.params.id
             const payment = req.body
-            console.log(payment);
+
             const filter = { _id: ObjectId(id) };
             const updateDoc = {
                 $set: payment
@@ -136,17 +172,17 @@ async function run() {
             const result = await reviewCollection.insertOne(review)
             res.send(result)
         })
-        app.get("/review", async (req, res) => {
+        app.get("/review", verifyToken, async (req, res) => {
             const query = {}
             const cursor = await reviewCollection.find(query).toArray()
-            console.log(cursor);
+
             res.send(cursor)
         })
         app.post('/create-payment-intent', verifyToken, async (req, res) => {
             const service = req.body
             const price = await service.price;
             const amount = price * 100;
-            console.log(amount);
+
             if (amount) {
                 const paymentIntent = await stripe.paymentIntents.create({
                     amount: amount,
@@ -155,7 +191,7 @@ async function run() {
 
 
                 });
-                console.log(paymentIntent);
+
                 res.send({
                     clientSecret: paymentIntent.client_secret,
                 });
