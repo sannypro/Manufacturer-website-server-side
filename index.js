@@ -46,6 +46,14 @@ async function run() {
             const result = await carPartsCollection.insertOne(parts)
             res.send(result)
         })
+        app.delete('/part/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: ObjectId(id) }
+            const result = await carPartsCollection.deleteOne(query)
+            res.send(result)
+
+
+        })
         app.get('/parts/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: ObjectId(id) }
@@ -175,6 +183,7 @@ async function run() {
             const result = await ordersCollection.updateOne(filter, updateDoc)
             res.send(result)
         })
+
         app.put("/order/:id", verifyToken, async (req, res) => {
             const id = req.params.id
             const payment = req.body
