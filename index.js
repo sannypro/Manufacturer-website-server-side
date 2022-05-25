@@ -204,7 +204,7 @@ async function run() {
             const result = await reviewCollection.insertOne(review)
             res.send(result)
         })
-        app.get("/review", verifyToken, async (req, res) => {
+        app.get("/review", async (req, res) => {
             const query = {}
             const cursor = await reviewCollection.find(query).toArray()
 
