@@ -23,9 +23,9 @@ function verifyToken(req, res, next) {
             return res.status(403).send({ message: 'Forbidden' })
         }
         req.decoded = decoded
-
+        next()
     });
-    next()
+
 }
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 async function run() {
@@ -46,7 +46,7 @@ async function run() {
             const result = await carPartsCollection.insertOne(parts)
             res.send(result)
         })
-        app.delete('/part/:id', async (req, res) => {
+        app.delete('/part/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const query = { _id: ObjectId(id) }
             const result = await carPartsCollection.deleteOne(query)
@@ -62,7 +62,7 @@ async function run() {
             res.send(result)
 
         })
-        app.get('/admin/:email', async (req, res) => {
+        app.get('/admin/:email', verifyToken, async (req, res) => {
             const email = req.params.email
             const user = await userCollection.findOne({ email: email })
             const isAdmin = user.role === "admin";
@@ -224,9 +224,7 @@ async function run() {
 
                 });
 
-                res.send({
-                    clientSecret: paymentIntent.client_secret,
-                });
+                res.send({ clientSecret: paymentIntent.client_secret });
 
             }
             else {
