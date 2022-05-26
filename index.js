@@ -136,6 +136,14 @@ async function run() {
             res.send(result)
 
         })
+        app.delete('/user/:userId', async (req, res) => {
+            const userId = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await userCollection.deleteOne(query)
+            res.send(result)
+
+
+        })
         app.get('/order', verifyToken, async (req, res) => {
             const email = req.query.email;
 
